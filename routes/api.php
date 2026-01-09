@@ -12,7 +12,6 @@ use App\Http\Controllers\QuickBuyController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CustomerOrderController;
-use App\Http\Controllers\Api\AIController;
 
 
 use App\Http\Controllers\Admin\AdminCustomerController;
@@ -20,7 +19,7 @@ use App\Http\Controllers\Admin\AdminOrderController;
 use App\Http\Controllers\Admin\AdminCouponController;
 use App\Http\Controllers\Admin\AdminProductController;
 
-
+use App\Http\Controllers\Api\AIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +35,7 @@ use App\Http\Controllers\Admin\AdminProductController;
 Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/auth/send-otp', [AuthController::class, 'sendOtp']);
 });
 
 // Admin routes
@@ -139,11 +139,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/send', [ChatController::class, 'sendMessage']);
         Route::get('/{conversationId}/messages', [ChatController::class, 'getNewMessages']);
     });
-
+    // AI Endpoints
+    // Route::middleware('auth:sanctum')->group(function () {
+    // ... các route cũ
+    
     // AI Routes
     Route::post('/ai/chat', [AIController::class, 'chat']);
     Route::get('/products/recommended', [AIController::class, 'recommendations']);
-
+// });
 });
 
 // Public routes (không cần đăng nhập)
@@ -155,3 +158,4 @@ Route::get('/products/top-selling', [ProductController::class, 'topSelling']);
 Route::get('/products/{id}', [ProductController::class, 'show'])->whereNumber('id');
 Route::get('/coupons', [CouponController::class, 'index']);
 Route::get('/coupons/{id}', [CouponController::class, 'show']);
+// Route::middleware('auth:sanctum')->optional()->get('/products/top-selling', [ProductController::class, 'topSelling']);
