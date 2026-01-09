@@ -12,6 +12,7 @@ use App\Http\Controllers\QuickBuyController;
 use App\Http\Controllers\ProductReviewController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CustomerOrderController;
+use App\Http\Controllers\Api\AIController;
 
 
 use App\Http\Controllers\Admin\AdminCustomerController;
@@ -138,6 +139,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/send', [ChatController::class, 'sendMessage']);
         Route::get('/{conversationId}/messages', [ChatController::class, 'getNewMessages']);
     });
+
+    // AI Routes
+    Route::post('/ai/chat', [AIController::class, 'chat']);
+    Route::get('/products/recommended', [AIController::class, 'recommendations']);
+
 });
 
 // Public routes (không cần đăng nhập)
