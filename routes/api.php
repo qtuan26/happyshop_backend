@@ -35,7 +35,6 @@ use App\Http\Controllers\Api\AIController;
 Route::middleware('guest')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/auth/send-otp', [AuthController::class, 'sendOtp']);
 });
 
 // Admin routes
