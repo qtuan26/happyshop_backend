@@ -12,6 +12,7 @@ use App\Models\Customer;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
+use App\Services\ResendMailService;
 
 class AuthController extends Controller
 {
@@ -22,32 +23,26 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email|unique:users,email',
             'name' => 'required|string|min:2',
-        ], [
-            'email.unique' => 'Email đã được sử dụng',
-            'email.required' => 'Email là bắt buộc',
         ]);
 
         try {
-            // Tạo OTP 6 chữ số
+            // Tạo OTP
             $otp = sprintf("%06d", mt_rand(100000, 999999));
-            
-            // Lưu OTP vào cache 5 phút
+
+            // Lưu cache 5 phút
             Cache::put('otp_' . $request->email, $otp, now()->addMinutes(5));
-            
-            // Gửi email
-            Mail::raw("Mã OTP của bạn là: $otp\n\nMã này sẽ hết hạn sau 5 phút.", function($message) use ($request) {
-                $message->to($request->email)
-                        ->subject('Mã OTP xác thực tài khoản MyShoes');
-            });
-            
+
+            // Gửi OTP bằng Resend API
+            ResendMailService::sendOtp($request->email, $otp);
+
             return response()->json([
                 'message' => 'Mã OTP đã được gửi đến email của bạn',
-            ], 200);
-            
+            ]);
+
         } catch (\Exception $e) {
             return response()->json([
-                'message' => 'Không thể gửi email',
-                'error' => $e->getMessage()
+                'message' => 'Không thể gửi OTP',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
