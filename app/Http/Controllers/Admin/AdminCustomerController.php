@@ -238,8 +238,10 @@ class AdminCustomerController extends Controller
      */
     public function destroy($id)
     {
+        DB::beginTransaction();
+
         try {
-            $customer = Customer::find($id);
+            $customer = Customer::with('user')->find($id);
 
             if (!$customer) {
                 return response()->json([
@@ -248,8 +250,15 @@ class AdminCustomerController extends Controller
                 ], 404);
             }
 
-            // Xóa customer (user sẽ tự động xóa do onDelete cascade)
+            // Xóa user trước (customer sẽ tự xóa hoặc ngược lại đều được)
+            if ($customer->user) {
+                $customer->user->delete();
+            }
+
+            // Xóa customer
             $customer->delete();
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -257,6 +266,8 @@ class AdminCustomerController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
+            DB::rollBack();
+
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
@@ -272,32 +283,42 @@ class AdminCustomerController extends Controller
         $validator = Validator::make($request->all(), [
             'customer_ids' => 'required|array',
             'customer_ids.*' => 'exists:customers,customer_id'
-        ], [
-            'customer_ids.required' => 'Danh sách ID khách hàng là bắt buộc',
-            'customer_ids.array' => 'Danh sách ID phải là mảng',
-            'customer_ids.*.exists' => 'Một hoặc nhiều ID khách hàng không tồn tại'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Dữ liệu không hợp lệ',
                 'errors' => $validator->errors()
             ], 422);
         }
 
+        DB::beginTransaction();
+
         try {
-            $deletedCount = Customer::whereIn('customer_id', $request->customer_ids)->delete();
+            $customers = Customer::with('user')
+                ->whereIn('customer_id', $request->customer_ids)
+                ->get();
+
+            foreach ($customers as $customer) {
+                if ($customer->user) {
+                    $customer->user->delete();
+                }
+                $customer->delete();
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => "Đã xóa {$deletedCount} khách hàng thành công"
-            ], 200);
+                'message' => 'Xóa nhiều khách hàng thành công'
+            ]);
 
         } catch (\Exception $e) {
+            DB::rollBack();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+                'message' => $e->getMessage()
             ], 500);
         }
     }
